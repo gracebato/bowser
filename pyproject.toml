@@ -106,6 +106,10 @@ pydantic-settings = "*"
 python-dateutil = ">=2.9.0.post0,<3"
 s3fs = ">=2024.1.0"
 aiobotocore = ">=2.13.0"
+# Transitive via titiler -> starlette-cramjam. PyPI cramjam 2.10.0 ships no
+# cp314 wheel and its sdist fails to build (PyO3 too old), so take it from
+# conda-forge, which has py314 builds.
+cramjam = "*"
 
 [tool.pixi.feature.writer.dependencies]
 # geozarr-toolkit requires pydantic >= 2.12; bump it in its own solve-group
@@ -115,12 +119,21 @@ aiobotocore = ">=2.13.0"
 # in `[tool.pixi.feature.writer.pypi-dependencies]` trips the "already a
 # dependency" error on pixi install --locked.
 pydantic = ">=2.12"
+# Mirror the extra's rasterio floor on the conda side: rioxarray pulls rasterio
+# from conda-forge, and that solve doesn't see the PyPI constraint, so it can
+# pin 1.4.3 and make the PyPI resolve unsatisfiable.
+rasterio = ">=1.5.0"
+
+[tool.pixi.feature.py-lt-314.dependencies]
+# fastapi 0.116 (pinned via titiler) calls asyncio.iscoroutinefunction, which
+# warns on 3.14 and fails the suite under filterwarnings = "error".
+python = "<3.14"
 
 [tool.pixi.environments]
 default = { solve-group = "default" }
 test = { features = ["test"], solve-group = "test" }
 writer = { features = ["writer"], solve-group = "writer" }
-all = { features = ["writer", "test"], solve-group = "all" }
+all = { features = ["writer", "test", "py-lt-314"], solve-group = "all" }
 
 [tool.pixi.tasks]
 
