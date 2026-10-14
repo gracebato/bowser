@@ -93,13 +93,34 @@ platforms = ["osx-arm64", "linux-64"]
 
 [tool.pixi.pypi-dependencies]
 bowser-insar = { path = ".", editable = true }
+# Temporary: `disp-s1-reformat --add-reference-epoch` is not yet released upstream.
+# Revert to the conda-forge `opera-utils` once it is.
+opera-utils = { git = "https://github.com/gracebato/opera-utils.git", branch = "reformat-reference-epoch" }
 
 [tool.pixi.dependencies]
 boto3 = "*"
 uvicorn = "*"
 typing_extensions = "*"
 tqdm = "*"
-opera-utils = "*"
+# Run deps of the conda-forge `opera-utils` package, kept from conda-forge while
+# opera-utils itself comes from git (see pypi-dependencies). Notably this keeps
+# GDAL with the NetCDF driver for `prepare-disp-s1`.
+affine = "*"
+aiohttp = "*"
+asf_search = ">=6.7"
+botocore = "*"
+dask = "*"
+fsspec = "*"
+gdal = ">=3.8"
+h5netcdf = "*"
+h5py = ">=1.10"
+libgdal-netcdf = "*"
+pooch = ">=1.7"
+pyproj = ">=3.3"
+shapely = ">=1.8"
+tyro = ">=0.9"
+xarray = ">=2025.01"
+zarr = ">=3"
 rioxarray = "*"
 matplotlib = "*"
 pydantic-settings = "*"

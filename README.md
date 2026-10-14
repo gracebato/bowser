@@ -61,21 +61,26 @@ pixi run -e writer bowser tifs-to-geozarr \
     --pyramid bowser_rasters.json cube.zarr
 ```
 
-### DISP-S1 → GeoZarr cube
+### From OPERA DISP NetCDFs (via `opera-utils`)
 
-To work with DISP-S1 products, you may convert them once into a single pyramidal GeoZarr cube, then serve that. The converter handles the reference-date bookkeeping for morving temporal reference,, builds multiscale pyramids, and writes GeoZarr convention attributes so titiler can pick the right overview per tile zoom.
+[`opera-utils`](https://github.com/opera-adt/opera-utils) (installed with bowser) can reformat a frame's DISP-S1 NetCDFs into one Zarr stack that bowser serves directly. It removes the moving reference date (so the time series is continuous from the first date), subtracts the solid earth tide, masks with `recommended_mask`, and spatially references to high-coherence pixels.
 
 ```bash
-# 1. prepare per-band GeoTIFFs and a bowser_rasters.json
-bowser setup-disp-s1 /path/to/disp-s1/outputs
+# 1. reformat all NetCDFs for one frame into a single Zarr stack
+opera-utils disp-s1-reformat --add-reference-epoch \
+    --input-files /path/to/disp-s1/OPERA_L3_DISP-S1_IW_F<frame>*.nc \
+    --output-name F<frame>.zarr
 
-# 2. convert to a single sharded GeoZarr cube with pyramid
-pixi run -e writer bowser tifs-to-geozarr \
-    --pyramid bowser_rasters.json cube.zarr
-
-# 3. serve
-bowser run --stack-file cube.zarr
+# 2. serve
+bowser run --stack-file F<frame>.zarr
 ```
+
+Notes:
+
+- This takes a while and the output is large. For example, 116 dates of a full frame took ~20 min and wrote 23 GB. Use `--drop-vars estimated_phase_quality shp_counts` to skip layers you don't need (~5 GB saved in that example).
+- `--add-reference-epoch` prepends the first reference date with zero displacement, so time series start at zero.
+- If it runs out of memory, lower `--process-chunk-size` (default `2048 2048`).
+- See `opera-utils disp-s1-reformat --help` for ionospheric corrections, other reference methods (point, border, median), and chunking options.
 
 For a **multi-dataset catalog** (pick from a map of bounding boxes at startup) and an **EC2 deployment** serving cubes from a private S3 bucket, see [`deploy/README.md`](deploy/README.md) for the `bowser register` CLI, the Docker image, and the EC2 bootstrap script end-to-end.
 
